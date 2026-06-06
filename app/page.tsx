@@ -1,65 +1,216 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useCallback } from 'react';
+import { useActivities } from '@/hooks/use-activities';
+import { ActivityType, ScoreValue } from '@/lib/types';
+import { Header } from '@/components/header';
+import { Footer } from '@/components/footer';
+import { ActivityForm } from '@/components/activity-form';
+import { ActivityList } from '@/components/activity-list';
+import { ScoringForm } from '@/components/scoring-form';
+import { ResultSummary } from '@/components/result-summary';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, ListChecks, ClipboardEdit } from 'lucide-react';
+
+type View = 'list' | 'create' | 'score' | 'result';
 
 export default function Home() {
+  const {
+    activities,
+    addActivity,
+    addActivities,
+    deleteActivity,
+    setScore,
+    getActivity,
+  } = useActivities();
+
+  const [view, setView] = useState<View>('list');
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('kegiatan');
+
+  const activeActivity = activeId ? getActivity(activeId) : undefined;
+
+  const handleCreateActivity = useCallback(
+    (name: string, type: ActivityType, stage: number) => {
+      const id = addActivity(name, type, stage);
+      setActiveId(id);
+      setView('score');
+      setActiveTab('penilaian');
+    },
+    [addActivity]
+  );
+
+  const handleCreateActivities = useCallback(
+    (names: string[], type: ActivityType, stage: number) => {
+      addActivities(
+        names.map((name) => ({
+          name,
+          type,
+          stage,
+        }))
+      );
+      setActiveId(null);
+      setView('list');
+      setActiveTab('kegiatan');
+    },
+    [addActivities]
+  );
+
+  const handleSelectActivity = useCallback(
+    (id: string) => {
+      setActiveId(id);
+      setView('score');
+      setActiveTab('penilaian');
+    },
+    []
+  );
+
+  const handleScoreChange = useCallback(
+    (paramCode: string, score: ScoreValue) => {
+      if (activeId) {
+        setScore(activeId, paramCode, score);
+      }
+    },
+    [activeId, setScore]
+  );
+
+  const handleDeleteActivity = useCallback(
+    (id: string) => {
+      deleteActivity(id);
+      if (activeId === id) {
+        setActiveId(null);
+        setView('list');
+        setActiveTab('kegiatan');
+      }
+    },
+    [activeId, deleteActivity]
+  );
+
+  const handleBackToList = useCallback(() => {
+    setView('list');
+    setActiveTab('kegiatan');
+  }, []);
+
+  const handleViewResults = useCallback(() => {
+    setView('result');
+    setActiveTab('hasil');
+  }, []);
+
+  const handleBackToScoring = useCallback(() => {
+    setView('score');
+    setActiveTab('penilaian');
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <>
+      <Header />
+      <main className="flex-1 mx-auto w-full max-w-3xl px-4 py-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            if (v === 'kegiatan') {
+              setView('list');
+            } else if (v === 'penilaian' && activeActivity) {
+              setView('score');
+            } else if (v === 'hasil' && activeActivity) {
+              setView('result');
+            }
+          }}
+          className="space-y-6"
+        >
+          <TabsList className="grid w-full grid-cols-3 bg-secondary/30 no-print">
+            <TabsTrigger
+              value="kegiatan"
+              className="gap-1.5 text-xs data-[state=active]:bg-background/80"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              <ListChecks className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Kegiatan</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="penilaian"
+              className="gap-1.5 text-xs data-[state=active]:bg-background/80"
+              disabled={!activeActivity}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+              <ClipboardEdit className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Penilaian</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="hasil"
+              className="gap-1.5 text-xs data-[state=active]:bg-background/80"
+              disabled={!activeActivity}
+            >
+              <svg
+                className="h-3.5 w-3.5"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 20v-6M6 20V10M18 20V4" />
+              </svg>
+              <span className="hidden sm:inline">Hasil</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="kegiatan" className="space-y-6">
+            {view === 'create' ? (
+              <Card className="border-border/50 bg-card/30">
+                <CardContent className="p-6">
+                  <ActivityForm
+                    onSubmitSingle={handleCreateActivity}
+                    onSubmitBatch={handleCreateActivities}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Daftar Kegiatan</h2>
+                  <Button
+                    size="sm"
+                    onClick={() => setView('create')}
+                    className="gap-1.5 text-xs bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white shadow-lg shadow-emerald-700/20"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Tambah Kegiatan
+                  </Button>
+                </div>
+                <ActivityList
+                  activities={activities}
+                  onSelect={handleSelectActivity}
+                  onDelete={handleDeleteActivity}
+                />
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="penilaian">
+            {activeActivity && view === 'score' && (
+              <ScoringForm
+                activity={activeActivity}
+                onScoreChange={handleScoreChange}
+                onBack={handleBackToList}
+                onViewResults={handleViewResults}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="hasil">
+            {activeActivity && view === 'result' && (
+              <ResultSummary
+                activity={activeActivity}
+                onBack={handleBackToScoring}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
-    </div>
+      <Footer />
+    </>
   );
 }
