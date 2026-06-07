@@ -84,7 +84,7 @@ export async function exportToExcel(activities: Activity[]) {
         fgColor: { argb: isProker ? 'FFEBF3FF' : 'FFFFFDE7' } // Biru Muda or Kuning Muda
       };
       cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      if (cell.col === 2) cell.alignment = { vertical: 'middle', horizontal: 'left' }; // Name left aligned
+      if (Number(cell.col) === 2) cell.alignment = { vertical: 'middle', horizontal: 'left' }; // Name left aligned
     });
 
     // Conditional Formatting for Nilai Akhir
