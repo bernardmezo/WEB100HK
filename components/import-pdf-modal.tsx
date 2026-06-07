@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { FileUp, Loader2, Check, AlertCircle, X } from 'lucide-react';
+import { FileUp, Loader2, Check, AlertCircle, X, Search } from 'lucide-react';
 import { ActivityType } from '@/lib/types';
 
 interface ImportPdfModalProps {
@@ -40,10 +40,6 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
         setError('Mohon pilih file PDF yang valid.');
         return;
       }
-      if (selectedFile.size > 3.5 * 1024 * 1024) {
-        setError('Ukuran file terlalu besar (Maks. 3.5MB). Silakan kompres PDF Anda.');
-        return;
-      }
       setFile(selectedFile);
       setError(null);
     }
@@ -66,47 +62,83 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
     validateAndSetFile(droppedFile);
   };
 
-  const handleUpload = async () => {
+  const extractTextFromPdf = async (file: File): Promise<string> => {
+    // Dynamic import to avoid SSR errors
+    const pdfjsLib = await import('pdfjs-dist');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+    const arrayBuffer = await file.arrayBuffer();
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    return fullText;
+  };
+
+  const parseActivitiesFromText = (text: string): ExtractionResult => {
+    const proker: string[] = [];
+    const agenda: string[] = [];
+
+    const lines = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 5);
+
+    lines.forEach(line => {
+      const cleanLine = line.replace(/^[\d\w\W]{1,3}\.\s*|^[-•*]\s*/, '').trim();
+      
+      if (cleanLine.length < 5 || cleanLine.length > 100) return;
+
+      const lowerLine = cleanLine.toLowerCase();
+      const isHeader = /daftar|tabel|lampiran|pengesahan|proker|agenda|kegiatan|periode/i.test(lowerLine) && cleanLine.split(' ').length < 4;
+      if (isHeader) return;
+
+      if (lowerLine.includes('proker') || lowerLine.includes('program kerja')) {
+        proker.push(cleanLine.replace(/proker|program kerja/i, '').replace(/^[:\s-]+/, '').trim());
+      } else if (lowerLine.includes('agenda')) {
+        agenda.push(cleanLine.replace(/agenda/i, '').replace(/^[:\s-]+/, '').trim());
+      } else {
+        if (cleanLine.split(' ').length >= 2) {
+          proker.push(cleanLine);
+        }
+      }
+    });
+
+    return {
+      proker: Array.from(new Set(proker)).filter(n => n.length > 3),
+      agenda: Array.from(new Set(agenda)).filter(n => n.length > 3),
+    };
+  };
+
+  const handleProcess = async () => {
     if (!file) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const base64 = (reader.result as string).split(',')[1];
-          resolve(base64);
-        };
-        reader.onerror = () => reject(new Error('Gagal membaca file.'));
-      });
-      reader.readAsDataURL(file);
-      const pdfBase64 = await base64Promise;
-
-      const response = await fetch('/api/extract-raker', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64 }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || errorData.error || 'Gagal mengekstrak data dari PDF.');
+      const text = await extractTextFromPdf(file);
+      const data = parseActivitiesFromText(text);
+      
+      if (data.proker.length === 0 && data.agenda.length === 0) {
+        throw new Error('Tidak dapat menemukan daftar kegiatan. Pastikan PDF berisi teks yang dapat dibaca (bukan hasil scan gambar).');
       }
 
-      const data: ExtractionResult = await response.json();
       setResult(data);
       
-      // Auto-select all
       const all = new Set<string>();
       data.proker.forEach(name => all.add(`proker:${name}`));
       data.agenda.forEach(name => all.add(`agenda:${name}`));
       setSelectedItems(all);
     } catch (err) {
-      console.error('Extraction error:', err);
-      const message = err instanceof Error ? err.message : 'Terjadi kesalahan saat memproses PDF.';
-      setError(message);
+      console.error('Processing error:', err);
+      setError('Gagal memproses PDF. Pastikan file valid dan bukan hasil scan gambar.');
     } finally {
       setLoading(false);
     }
@@ -151,7 +183,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
         <DialogHeader>
           <DialogTitle>Import dari PDF Raker</DialogTitle>
           <DialogDescription>
-            Ekstrak daftar Program Kerja dan Agenda secara otomatis dari dokumen Raker.
+            Ekstrak daftar Program Kerja dan Agenda secara lokal tanpa AI (Cepat & Stabil).
           </DialogDescription>
         </DialogHeader>
 
@@ -183,7 +215,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
                     {file ? file.name : 'Pilih atau drop file PDF Raker'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Hanya file PDF (Maks. 3.5MB)
+                    Pastikan PDF berisi teks (Bukan Scan Gambar)
                   </p>
                 </div>
               </div>
@@ -196,24 +228,27 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
               )}
 
               <Button
-                className="w-full"
+                className="w-full bg-emerald-600 hover:bg-emerald-700"
                 disabled={!file || loading}
-                onClick={handleUpload}
+                onClick={handleProcess}
               >
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Mengekstrak Data...
+                    Membaca Dokumen...
                   </>
                 ) : (
-                  'Mulai Ekstraksi AI'
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Ekstrak Daftar Kegiatan
+                  </>
                 )}
               </Button>
             </div>
           ) : (
             <div className="space-y-4 h-full flex flex-col">
               <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-                <span>Hasil Ekstraksi AI:</span>
+                <span>Hasil Ekstraksi Lokal:</span>
                 <Button variant="ghost" size="sm" className="h-auto py-0 text-xs" onClick={() => setResult(null)}>
                   <X className="h-3 w-3 mr-1" /> Ganti File
                 </Button>
@@ -299,7 +334,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
             Batal
           </Button>
           {result && (
-            <Button onClick={handleConfirm} disabled={selectedItems.size === 0}>
+            <Button onClick={handleConfirm} className="bg-emerald-600 hover:bg-emerald-700" disabled={selectedItems.size === 0}>
               Import {selectedItems.size} Item
             </Button>
           )}
