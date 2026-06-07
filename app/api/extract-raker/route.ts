@@ -9,9 +9,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No PDF content provided' }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
+      return NextResponse.json({ error: 'Gemini API key not configured (GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY)' }, { status: 500 });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -51,12 +51,16 @@ Jangan tambahkan komentar, markdown, atau teks apapun di luar JSON.`;
     try {
       const json = JSON.parse(text);
       return NextResponse.json(json);
-    } catch {
-      console.error('Failed to parse JSON from Gemini response:', text);
-      return NextResponse.json({ error: 'AI returned invalid JSON' }, { status: 500 });
+    } catch (parseError) {
+      console.error('Failed to parse JSON from Gemini response:', text, parseError);
+      return NextResponse.json({ error: 'AI returned invalid JSON', details: text }, { status: 500 });
     }
-  } catch (error) {
-    console.error('Internal server error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Internal server error details:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
 }
