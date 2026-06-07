@@ -34,14 +34,36 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
+  const validateAndSetFile = (selectedFile: File | undefined) => {
+    if (selectedFile) {
+      if (selectedFile.type !== 'application/pdf') {
+        setError('Mohon pilih file PDF yang valid.');
+        return;
+      }
+      if (selectedFile.size > 3.5 * 1024 * 1024) {
+        setError('Ukuran file terlalu besar (Maks. 3.5MB). Silakan kompres PDF Anda.');
+        return;
+      }
       setFile(selectedFile);
       setError(null);
-    } else {
-      setError('Mohon pilih file PDF yang valid.');
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    validateAndSetFile(selectedFile);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const droppedFile = e.dataTransfer.files?.[0];
+    validateAndSetFile(droppedFile);
   };
 
   const handleUpload = async () => {
@@ -52,11 +74,12 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
 
     try {
       const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve) => {
+      const base64Promise = new Promise<string>((resolve, reject) => {
         reader.onload = () => {
           const base64 = (reader.result as string).split(',')[1];
           resolve(base64);
         };
+        reader.onerror = () => reject(new Error('Gagal membaca file.'));
       });
       reader.readAsDataURL(file);
       const pdfBase64 = await base64Promise;
@@ -68,7 +91,8 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
       });
 
       if (!response.ok) {
-        throw new Error('Gagal mengekstrak data dari PDF.');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Gagal mengekstrak data dari PDF.');
       }
 
       const data: ExtractionResult = await response.json();
@@ -80,6 +104,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
       data.agenda.forEach(name => all.add(`agenda:${name}`));
       setSelectedItems(all);
     } catch (err) {
+      console.error('Extraction error:', err);
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan saat memproses PDF.';
       setError(message);
     } finally {
@@ -138,6 +163,8 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
                   file ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-border hover:border-emerald-500/50'
                 }`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
               >
                 <input
                   type="file"
@@ -156,7 +183,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
                     {file ? file.name : 'Pilih atau drop file PDF Raker'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Hanya file PDF (Maks. 10MB)
+                    Hanya file PDF (Maks. 3.5MB)
                   </p>
                 </div>
               </div>
