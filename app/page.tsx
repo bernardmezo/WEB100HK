@@ -98,6 +98,19 @@ export default function Home() {
     setActiveTab('hasil');
   }, []);
 
+  const handleImportActivities = useCallback(
+    (items: { name: string; type: ActivityType }[]) => {
+      addActivities(
+        items.map((item) => ({
+          name: item.name,
+          type: item.type,
+          stage: 1, // Default stage 1 for imported items
+        }))
+      );
+    },
+    [addActivities]
+  );
+
   const handleBackToScoring = useCallback(() => {
     setView('score');
     setActiveTab('penilaian');
@@ -184,6 +197,7 @@ export default function Home() {
                   activities={activities}
                   onSelect={handleSelectActivity}
                   onDelete={handleDeleteActivity}
+                  onImport={handleImportActivities}
                 />
               </>
             )}

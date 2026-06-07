@@ -12,10 +12,10 @@ export function Header() {
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-              MPM Distrik TIK
+              MPM PNJ
             </p>
             <h1 className="text-lg font-semibold font-heading text-foreground">
-              Kalkulator Penilaian R100HK
+              Sistem Penilaian R100HK IKM PNJ
             </h1>
             <p className="text-xs text-muted-foreground">
               Rapat 100 Hari Kerja — IKM PNJ 2025/2026

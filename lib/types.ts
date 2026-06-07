@@ -2,15 +2,15 @@
 
 export type ActivityType = 'proker' | 'agenda';
 
-export type ScoreValue = 0 | 25 | 50 | 75;
+export type ScoreValue = 25 | 50 | 75 | 100;
 
-export const SCORE_VALUES: ScoreValue[] = [0, 25, 50, 75];
+export const SCORE_VALUES: ScoreValue[] = [25, 50, 75, 100];
 
 export const SCORE_LABELS: Record<ScoreValue, string> = {
-  0: 'Tidak Terpenuhi',
   25: 'Kurang',
   50: 'Cukup',
   75: 'Baik',
+  100: 'Sangat Baik',
 };
 
 export interface ScoreDescription {
@@ -25,7 +25,6 @@ export interface Parameter {
   weight: number; // percentage, e.g. 8 for 8%
   legalBasis: string;
   description: string;
-  baselineNote?: string; // optional note about when baseline applies
   scoreDescriptions: ScoreDescription[];
 }
 
@@ -43,7 +42,6 @@ export interface ParameterResult {
   name: string;
   weight: number;
   score: ScoreValue;
-  isBaseline: boolean;
   contribution: number; // score * weight / 100
 }
 

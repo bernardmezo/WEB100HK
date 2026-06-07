@@ -18,9 +18,9 @@ const spectral = Spectral({
 });
 
 export const metadata: Metadata = {
-  title: "Kalkulator Penilaian R100HK — IKM PNJ",
+  title: "Sistem Penilaian R100HK IKM PNJ",
   description:
-    "Kalkulator penilaian Program Kerja dan Agenda untuk Rapat 100 Hari Kerja IKM PNJ 2025/2026. Menggunakan parameter penilaian resmi MPM Distrik TIK.",
+    "Sistem penilaian kinerja Program Kerja dan Agenda Ormawa IKM PNJ pada Rapat 100 Hari Kerja.",
   keywords: [
     "R100HK",
     "IKM PNJ",
@@ -30,11 +30,11 @@ export const metadata: Metadata = {
     "Penilaian",
     "Rapat 100 Hari Kerja",
   ],
-  authors: [{ name: "MPM Distrik TIK — IKM PNJ" }],
+  authors: [{ name: "MPM PNJ" }],
   openGraph: {
-    title: "Kalkulator Penilaian R100HK — IKM PNJ",
+    title: "Sistem Penilaian R100HK IKM PNJ",
     description:
-      "Kalkulator penilaian Program Kerja dan Agenda untuk Rapat 100 Hari Kerja IKM PNJ 2025/2026.",
+      "Sistem penilaian kinerja Program Kerja dan Agenda Ormawa IKM PNJ pada Rapat 100 Hari Kerja.",
     type: "website",
   },
 };
