@@ -98,11 +98,10 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
       <div ref={printRef} className="space-y-6">
         {/* Print Header */}
         <div className="print-only text-center mb-6">
-          <h1 className="text-xl font-bold">Hasil Penilaian R100HK</h1>
+          <h1 className="text-xl font-bold text-foreground">Sistem Penilaian R100HK IKM PNJ</h1>
           <p className="text-sm">
             Rapat 100 Hari Kerja — IKM PNJ 2025/2026
           </p>
-          <p className="text-xs mt-1">MPM Distrik TIK</p>
         </div>
 
         {/* Big Score Display */}
@@ -170,9 +169,6 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                     <th className="text-center py-2 px-2 font-medium text-muted-foreground">
                       Skor
                     </th>
-                    <th className="text-center py-2 px-2 font-medium text-muted-foreground">
-                      Status
-                    </th>
                     <th className="text-right py-2 px-2 font-medium text-muted-foreground">
                       Kontribusi
                     </th>
@@ -194,23 +190,6 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                       <td className={`py-2 px-2 text-center font-bold ${getScoreColor(r.score)}`}>
                         {r.score}
                       </td>
-                      <td className="py-2 px-2 text-center">
-                        {r.isBaseline ? (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] border-amber-500/30 text-amber-400"
-                          >
-                            Baseline
-                          </Badge>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] border-emerald-600/30 text-emerald-700"
-                          >
-                            Aktif
-                          </Badge>
-                        )}
-                      </td>
                       <td className="py-2 px-2 text-right font-bold tabular-nums">
                         {r.contribution.toFixed(2)}
                       </td>
@@ -220,7 +199,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                 <tfoot>
                   <tr className="border-t border-border/50">
                     <td
-                      colSpan={5}
+                      colSpan={4}
                       className="py-3 px-2 font-semibold text-right"
                     >
                       Nilai Akhir
@@ -243,7 +222,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
             <h3 className="text-sm font-semibold mb-3">Visualisasi Kontribusi</h3>
             <div className="space-y-2">
               {result.parameterResults.map((r) => {
-                const maxContrib = 75 * Math.max(...result.parameterResults.map(p => p.weight)) / 100;
+                const maxContrib = 100 * Math.max(...result.parameterResults.map(p => p.weight)) / 100;
                 const widthPercent = maxContrib > 0 ? (r.contribution / maxContrib) * 100 : 0;
                 return (
                   <div key={r.code} className="flex items-center gap-2">
@@ -253,12 +232,12 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                     <div className="flex-1 h-5 bg-secondary/30 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full bg-gradient-to-r ${
-                          r.score === 75
+                          r.score === 100
                             ? 'from-emerald-500 to-emerald-400'
+                            : r.score === 75
+                            ? 'from-blue-500 to-blue-400'
                             : r.score === 50
                             ? 'from-amber-500 to-amber-400'
-                            : r.score === 25
-                            ? 'from-orange-500 to-orange-400'
                             : 'from-rose-500 to-rose-400'
                         } transition-all duration-500`}
                         style={{ width: `${Math.max(widthPercent, 2)}%` }}
@@ -278,7 +257,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         <Separator className="opacity-30" />
         <div className="text-center text-[10px] text-muted-foreground space-y-0.5">
           <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / 100</p>
-          <p>Skala skor: 0 / 25 / 50 / 75 · Baseline Netral = 50</p>
+          <p>Skala skor: 25 / 50 / 75 / 100</p>
           <p>
             Dicetak pada:{' '}
             {new Date().toLocaleDateString('id-ID', {
