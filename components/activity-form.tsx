@@ -217,17 +217,10 @@ export function ActivityForm({ onSubmitSingle, onSubmitBatch }: ActivityFormProp
 
           {/* Stage Info */}
           {stageDesc && (
-            <div className="rounded-lg bg-emerald-600/5 border border-emerald-600/10 p-3 text-xs space-y-1 animate-fade-in">
-              <p>
-                <span className="text-emerald-700 font-medium">Parameter Aktif:</span>{' '}
-                <span className="text-foreground/80">{stageDesc.active}</span>
+            <div className="rounded-lg bg-emerald-600/5 border border-emerald-600/10 p-3 text-xs animate-fade-in text-center">
+              <p className="text-muted-foreground">
+                Seluruh parameter (A1–A14/B1–B9) tetap aktif dan wajib diisi pada tahap ini.
               </p>
-              {stageDesc.baseline && (
-                <p>
-                  <span className="text-amber-400 font-medium">Baseline 50:</span>{' '}
-                  <span className="text-foreground/80">{stageDesc.baseline}</span>
-                </p>
-              )}
             </div>
           )}
         </div>

@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react';
 import { Activity, ScoreValue } from '@/lib/types';
 import { PROKER_PARAMETERS, AGENDA_PARAMETERS } from '@/lib/parameters';
-import { isBaseline } from '@/lib/stages';
 import { calculateScore, getPredicate } from '@/lib/calculator';
 import { ParameterCard } from './parameter-card';
 import { Badge } from '@/components/ui/badge';
@@ -31,15 +30,12 @@ export function ScoringForm({
   const predicate = useMemo(() => getPredicate(result.finalScore), [result.finalScore]);
   const [inputMode, setInputMode] = useState<'predicate' | 'score'>('predicate');
 
-  const activeParams = parameters.filter(
-    (p) => !isBaseline(activity.type, activity.stage, p.code)
-  );
-  const scoredActive = activeParams.filter(
+  const scoredParams = parameters.filter(
     (p) => activity.scores[p.code] !== undefined
   );
   const progressPercent =
-    activeParams.length > 0
-      ? (scoredActive.length / activeParams.length) * 100
+    parameters.length > 0
+      ? (scoredParams.length / parameters.length) * 100
       : 100;
 
   return (
@@ -104,7 +100,7 @@ export function ScoringForm({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">
-              {scoredActive.length}/{activeParams.length} parameter aktif dinilai
+              {scoredParams.length}/{parameters.length} parameter dinilai
             </span>
             <span className="text-muted-foreground">
               {Math.round(progressPercent)}%
@@ -117,17 +113,13 @@ export function ScoringForm({
       {/* Parameter Cards */}
       <div className="space-y-3">
         {parameters.map((param, i) => {
-          const baseline = isBaseline(activity.type, activity.stage, param.code);
-          const score: ScoreValue = baseline
-            ? 50
-            : (activity.scores[param.code] ?? 50);
+          const score: ScoreValue = activity.scores[param.code] ?? 50;
 
           return (
             <ParameterCard
               key={param.code}
               parameter={param}
               score={score}
-              isBaseline={baseline}
               onScoreChange={(s) => onScoreChange(param.code, s)}
               index={i}
               displayMode={inputMode}

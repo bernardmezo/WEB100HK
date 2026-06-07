@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Activity } from '@/lib/types';
+import { useMemo, useState } from 'react';
+import { Activity, ActivityType } from '@/lib/types';
 import { calculateScore, getPredicate } from '@/lib/calculator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,12 +14,17 @@ import {
   Trash2,
   BarChart3,
   ListChecks,
+  FileSpreadsheet,
+  FileUp,
 } from 'lucide-react';
+import { exportToExcel } from '@/lib/excel-export';
+import { ImportPdfModal } from './import-pdf-modal';
 
 interface ActivityListProps {
   activities: Activity[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onImport: (items: { name: string; type: ActivityType }[]) => void;
 }
 
 function ActivityCard({
@@ -113,7 +118,8 @@ function ActivityCard({
   );
 }
 
-export function ActivityList({ activities, onSelect, onDelete }: ActivityListProps) {
+export function ActivityList({ activities, onSelect, onDelete, onImport }: ActivityListProps) {
+  const [importModalOpen, setImportModalOpen] = useState(false);
   // Recap stats
   const stats = useMemo(() => {
     if (activities.length === 0) return null;
@@ -150,22 +156,65 @@ export function ActivityList({ activities, onSelect, onDelete }: ActivityListPro
         <h3 className="text-sm font-medium text-muted-foreground">
           Belum ada kegiatan
         </h3>
-        <p className="text-xs text-muted-foreground/70">
-          Tambahkan kegiatan baru untuk memulai penilaian R100HK
+        <p className="text-xs text-muted-foreground/70 mb-4">
+          Tambahkan kegiatan baru atau import dari PDF Raker
         </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setImportModalOpen(true)}
+          className="gap-1.5 text-xs"
+        >
+          <FileUp className="h-3.5 w-3.5" />
+          Import dari PDF Raker
+        </Button>
+        <ImportPdfModal
+          open={importModalOpen}
+          onOpenChange={setImportModalOpen}
+          onConfirm={onImport}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-4 animate-fade-in">
+      <div className="flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setImportModalOpen(true)}
+          className="h-8 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <FileUp className="h-3.5 w-3.5" />
+          Import dari PDF Raker
+        </Button>
+      </div>
+
+      <ImportPdfModal
+        open={importModalOpen}
+        onOpenChange={setImportModalOpen}
+        onConfirm={onImport}
+      />
+
       {/* Recap Card */}
       {stats && (
         <Card className="border-emerald-600/20 bg-emerald-600/5">
           <CardContent className="p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart3 className="h-4 w-4 text-emerald-700" />
-              <h3 className="text-sm font-semibold">Rekapitulasi</h3>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-emerald-700" />
+                <h3 className="text-sm font-semibold">Rekapitulasi</h3>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportToExcel(activities)}
+                className="h-7 px-2 text-[10px] gap-1 border-emerald-600/30 text-emerald-700 hover:bg-emerald-600/10"
+              >
+                <FileSpreadsheet className="h-3 w-3" />
+                Export Excel
+              </Button>
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
