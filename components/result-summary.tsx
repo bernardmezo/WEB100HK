@@ -100,7 +100,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         <div className="print-only text-center mb-6">
           <h1 className="text-xl font-bold text-foreground">Sistem Penilaian R100HK IKM PNJ</h1>
           <p className="text-sm">
-            Rapat 100 Hari Kerja — IKM PNJ 2025/2026
+            Rapat 100 Hari Kerja — IKM PNJ 2026
           </p>
         </div>
 

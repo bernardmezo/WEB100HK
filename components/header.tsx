@@ -18,7 +18,7 @@ export function Header() {
               Sistem Penilaian R100HK IKM PNJ
             </h1>
             <p className="text-xs text-muted-foreground">
-              Rapat 100 Hari Kerja — IKM PNJ 2025/2026
+              Rapat 100 Hari Kerja — IKM PNJ 2026
             </p>
           </div>
         </div>
