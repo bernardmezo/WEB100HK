@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' }, { apiVersion: 'v1' });
 
     const prompt = `Kamu adalah asisten yang bertugas mengekstrak daftar Program Kerja dan Agenda dari dokumen Rapat Kerja (Raker) organisasi mahasiswa.
 
