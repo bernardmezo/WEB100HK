@@ -65,7 +65,8 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
   const extractTextFromPdf = async (file: File): Promise<string> => {
     // Dynamic import to avoid SSR errors
     const pdfjsLib = await import('pdfjs-dist');
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    const version = pdfjsLib.version;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${version}/build/pdf.worker.min.mjs`;
 
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
