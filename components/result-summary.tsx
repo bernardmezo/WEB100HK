@@ -235,8 +235,8 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
               <div className="flex gap-2">
                 <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                 <p>
-                  Sesuai <strong>Tahap {activity.stage}</strong>, parameter yang belum tercapai dikecualikan dari penilaian. 
-                  Bobot parameter aktif didistribusikan secara proporsional sehingga Nilai Akhir tetap dalam skala 25-100.
+                  Sesuai <strong>Tahap {activity.stage}</strong>, parameter yang belum tercapai dikecualikan dari penilaian dan bernilai 0. 
+                  Oleh karena itu, Nilai Akhir akan secara natural lebih kecil karena tidak dilakukan normalisasi, mencerminkan progres riil kegiatan saat ini.
                 </p>
               </div>
             </div>
@@ -283,7 +283,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         {/* Formula Reference */}
         <Separator className="opacity-30" />
         <div className="text-center text-[10px] text-muted-foreground space-y-0.5">
-          <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / Σ Bobot_aktif</p>
+          <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / 100</p>
           <p>Skala skor: 25 / 50 / 75 / 100</p>
           <p>
             Dicetak pada:{' '}

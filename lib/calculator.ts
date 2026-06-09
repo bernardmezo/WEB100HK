@@ -72,21 +72,21 @@ export function getPredicate(score: number): Predicate {
 /**
  * Calculate the final score and breakdown for an activity.
  *
- * Formula: Nilai Akhir = Σ (Skor_i × Bobot_i) / Σ Bobot_aktif
- * This ensures proportional redistribution of weights as per documentation.
+ * Formula: Nilai Akhir = Σ (Skor_i × Bobot_i) / 100
+ * Inactive parameters based on stage contribute 0.
  */
 export function calculateScore(activity: Activity): CalculationResult {
   const parameters = activity.type === 'proker' ? PROKER_PARAMETERS : AGENDA_PARAMETERS;
   const activeCodes = getActiveParameterCodes(activity.type, activity.stage);
-  
-  // Calculate total weight of active parameters for redistribution
-  const totalActiveWeight = parameters
-    .filter(p => activeCodes.has(p.code))
-    .reduce((sum, p) => sum + p.weight, 0);
 
   const parameterResults: ParameterResult[] = parameters.map((param) => {
-    // Default to 50 if no score provided
-    const score: ScoreValue = (activity.scores[param.code] ?? 50) as ScoreValue;
+    const isActive = activeCodes.has(param.code);
+    
+    // Inactive parameters have score 0.
+    // Active parameters default to 50 if no score provided.
+    const score: ScoreValue = isActive 
+      ? ((activity.scores[param.code] ?? 50) as ScoreValue) 
+      : 0 as unknown as ScoreValue; 
     
     // Contribution is calculated normally for each parameter
     const contribution = (score * param.weight) / 100;
@@ -100,15 +100,8 @@ export function calculateScore(activity: Activity): CalculationResult {
     };
   });
 
-  // Sum contributions of ONLY active parameters
-  const activeContributionSum = parameterResults
-    .filter(r => activeCodes.has(r.code))
-    .reduce((sum, r) => sum + r.contribution, 0);
-
-  // Redistribute: (Sum of Active Contributions / Sum of Active Weights) * 100
-  const finalScore = totalActiveWeight > 0 
-    ? (activeContributionSum * 100) / totalActiveWeight 
-    : 0;
+  // Sum contributions of all parameters (inactive will be 0)
+  const finalScore = parameterResults.reduce((sum, r) => sum + r.contribution, 0);
     
   const roundedScore = Math.round(finalScore * 100) / 100;
   const predicate = getPredicate(roundedScore);

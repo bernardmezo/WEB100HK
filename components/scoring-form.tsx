@@ -123,8 +123,8 @@ export function ScoringForm({
         <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] leading-relaxed text-amber-800">
           <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
           <p>
-            Berdasarkan <strong>Tahap {activity.stage}</strong>, hanya {parameters.length} parameter ({activeCodes.has('A1') ? 'A1' : 'B1'}-{activeCodes.has('A1') ? 'A' : 'B'}{parameters.length}) yang dinilai. 
-            Bobot parameter lainnya didistribusikan secara proporsional.
+            Berdasarkan <strong>Tahap {activity.stage}</strong>, hanya {parameters.length} parameter yang dinilai. 
+            Parameter yang belum aktif akan bernilai 0, sehingga <strong>Nilai Akhir</strong> yang didapatkan akan lebih kecil secara natural (tidak dinormalisasi) sesuai dengan progres riil saat ini.
           </p>
         </div>
       </div>

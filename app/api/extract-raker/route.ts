@@ -9,14 +9,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No PDF content provided' }, { status: 400 });
     }
 
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({ error: 'Gemini API key not configured (GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY)' }, { status: 500 });
+    // Mendukung hingga 3 API Key sebagai cadangan
+    const apiKeys = [
+      process.env.GEMINI_API_KEY,
+      process.env.GEMINI_API_KEY_2,
+      process.env.GEMINI_API_KEY_3,
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    ].filter(Boolean) as string[];
+
+    if (apiKeys.length === 0) {
+      return NextResponse.json({ 
+        error: 'Gemini API key not configured. Tambahkan GEMINI_API_KEY di .env' 
+      }, { status: 500 });
     }
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // List of models available in the 2026 environment
     const modelNames = [
       'gemini-2.5-flash', 
       'gemini-3.5-flash', 
@@ -45,32 +51,46 @@ Pastikan:
     let success = false;
     let lastError: any = null;
 
-    for (const modelName of modelNames) {
-      try {
-        console.log(`Attempting extraction with model: ${modelName}`);
-        // Let the SDK choose the best API version automatically
-        const model = genAI.getGenerativeModel({ model: modelName });
-        
-        const result = await model.generateContent([
-          {
-            inlineData: {
-              data: pdfBase64,
-              mimeType: 'application/pdf',
-            },
-          },
-          prompt,
-        ]);
+    // Coba setiap API Key yang tersedia
+    for (let i = 0; i < apiKeys.length; i++) {
+      const apiKey = apiKeys[i];
+      console.log(`Menggunakan API Key #${i + 1}`);
+      const genAI = new GoogleGenerativeAI(apiKey);
 
-        const response = await result.response;
-        text = response.text();
-        if (text) {
-          success = true;
-          break;
+      for (const modelName of modelNames) {
+        try {
+          console.log(`Attempting extraction with model: ${modelName} using API Key #${i + 1}`);
+          const model = genAI.getGenerativeModel({ model: modelName });
+          
+          const result = await model.generateContent([
+            {
+              inlineData: {
+                data: pdfBase64,
+                mimeType: 'application/pdf',
+              },
+            },
+            prompt,
+          ]);
+
+          const response = await result.response;
+          text = response.text();
+          if (text) {
+            success = true;
+            break;
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.error(`Model ${modelName} with API Key #${i + 1} failed:`, err.message);
+          
+          // Jika kuota habis (429), break model loop, lanjut ke API key berikutnya
+          if (err.message?.includes('429') || err.message?.includes('quota')) {
+            break;
+          }
         }
-      } catch (err: any) {
-        lastError = err;
-        console.error(`Model ${modelName} failed:`, err.message);
-        // If it's a 404, we continue to the next model
+      }
+
+      if (success) {
+        break; // Jika berhasil, keluar dari loop API key
       }
     }
 
