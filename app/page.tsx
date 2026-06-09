@@ -99,12 +99,12 @@ export default function Home() {
   }, []);
 
   const handleImportActivities = useCallback(
-    (items: { name: string; type: ActivityType }[]) => {
+    (items: { name: string; type: ActivityType; stage: number }[]) => {
       addActivities(
         items.map((item) => ({
           name: item.name,
           type: item.type,
-          stage: 1, // Default stage 1 for imported items
+          stage: item.stage,
         }))
       );
     },

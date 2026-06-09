@@ -219,7 +219,8 @@ export function ActivityForm({ onSubmitSingle, onSubmitBatch }: ActivityFormProp
           {stageDesc && (
             <div className="rounded-lg bg-emerald-600/5 border border-emerald-600/10 p-3 text-xs animate-fade-in text-center">
               <p className="text-muted-foreground">
-                Seluruh parameter (A1–A14/B1–B9) tetap aktif dan wajib diisi pada tahap ini.
+                Berdasarkan <strong>Tahap {stage}</strong>, parameter aktif adalah <strong>{stageDesc.active}</strong>. 
+                Parameter lainnya dikecualikan dan bobotnya didistribusikan secara proporsional.
               </p>
             </div>
           )}

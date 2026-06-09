@@ -9,16 +9,23 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { FileUp, Loader2, Check, AlertCircle, X, Sparkles } from 'lucide-react';
-import { ActivityType } from '@/lib/types';
+import { FileUp, Loader2, Check, AlertCircle, X, Sparkles, ChevronRight } from 'lucide-react';
+import { ActivityType, PROKER_STAGES, AGENDA_STAGES } from '@/lib/types';
 
 interface ImportPdfModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (items: { name: string; type: ActivityType }[]) => void;
+  onConfirm: (items: { name: string; type: ActivityType; stage: number }[]) => void;
 }
 
 interface ExtractionResult {
@@ -32,6 +39,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
   const [result, setResult] = useState<ExtractionResult | null>(null);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [itemTypes, setItemTypes] = useState<Record<string, ActivityType>>({});
+  const [itemStages, setItemStages] = useState<Record<string, number>>({});
   const [editedNames, setEditedNames] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,6 +107,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
       
       const allSelected = new Set<string>();
       const initialTypes: Record<string, ActivityType> = {};
+      const initialStages: Record<string, number> = {};
       const initialNames: Record<string, string> = {};
       
       json.items.forEach((name: string, index: number) => {
@@ -107,11 +116,13 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
         // Default based on keyword search
         const isAgenda = name.toLowerCase().includes('agenda');
         initialTypes[key] = isAgenda ? 'agenda' : 'proker';
+        initialStages[key] = 1;
         initialNames[key] = name;
       });
       
       setSelectedItems(allSelected);
       setItemTypes(initialTypes);
+      setItemStages(initialStages);
       setEditedNames(initialNames);
     } catch (err) {
       console.error('Processing error:', err);
@@ -133,6 +144,11 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
 
   const setType = (key: string, type: ActivityType) => {
     setItemTypes(prev => ({ ...prev, [key]: type }));
+    setItemStages(prev => ({ ...prev, [key]: 1 }));
+  };
+
+  const setStage = (key: string, stage: number) => {
+    setItemStages(prev => ({ ...prev, [key]: stage }));
   };
 
   const handleNameChange = (key: string, newName: string) => {
@@ -142,13 +158,14 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
   const handleConfirm = () => {
     if (!result) return;
 
-    const confirmedItems: { name: string; type: ActivityType }[] = [];
+    const confirmedItems: { name: string; type: ActivityType; stage: number }[] = [];
     selectedItems.forEach(key => {
       const name = editedNames[key]?.trim();
       if (name) {
         confirmedItems.push({ 
           name, 
-          type: itemTypes[key] || 'proker' 
+          type: itemTypes[key] || 'proker',
+          stage: itemStages[key] || 1
         });
       }
     });
@@ -164,6 +181,7 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
     setError(null);
     setSelectedItems(new Set());
     setItemTypes({});
+    setItemStages({});
     setEditedNames({});
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -248,11 +266,13 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
                 </Button>
               </div>
 
-              <ScrollArea className="h-[350px] pr-3 -mr-3">
+              <ScrollArea className="h-[400px] pr-3 -mr-3">
                 <div className="space-y-3 pb-4">
                   {result.items.map((_, i) => {
                     const key = `item-${i}`;
                     const isSelected = selectedItems.has(key);
+                    const type = itemTypes[key] || 'proker';
+                    const stages = type === 'proker' ? PROKER_STAGES : AGENDA_STAGES;
                     
                     return (
                       <div
@@ -291,27 +311,50 @@ export function ImportPdfModal({ open, onOpenChange, onConfirm }: ImportPdfModal
                         </div>
 
                         {isSelected && (
-                          <div className="flex items-center gap-2 pl-7">
-                            <button
-                              onClick={() => setType(key, 'proker')}
-                              className={`px-3 py-1 rounded-full text-[10px] border transition-all ${
-                                itemTypes[key] === 'proker'
-                                  ? 'bg-emerald-600/20 border-emerald-600/30 text-emerald-700 font-semibold'
-                                  : 'bg-transparent border-border text-muted-foreground hover:border-emerald-600/30'
-                              }`}
-                            >
-                              Proker
-                            </button>
-                            <button
-                              onClick={() => setType(key, 'agenda')}
-                              className={`px-3 py-1 rounded-full text-[10px] border transition-all ${
-                                itemTypes[key] === 'agenda'
-                                  ? 'bg-amber-500/20 border-amber-500/30 text-amber-700 font-semibold'
-                                  : 'bg-transparent border-border text-muted-foreground hover:border-amber-500/30'
-                              }`}
-                            >
-                              Agenda
-                            </button>
+                          <div className="space-y-3 pl-7">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setType(key, 'proker')}
+                                className={`px-3 py-1 rounded-full text-[10px] border transition-all ${
+                                  itemTypes[key] === 'proker'
+                                    ? 'bg-emerald-600/20 border-emerald-600/30 text-emerald-700 font-semibold'
+                                    : 'bg-transparent border-border text-muted-foreground hover:border-emerald-600/30'
+                                }`}
+                              >
+                                Proker
+                              </button>
+                              <button
+                                onClick={() => setType(key, 'agenda')}
+                                className={`px-3 py-1 rounded-full text-[10px] border transition-all ${
+                                  itemTypes[key] === 'agenda'
+                                    ? 'bg-amber-500/20 border-amber-500/30 text-amber-700 font-semibold'
+                                    : 'bg-transparent border-border text-muted-foreground hover:border-amber-500/30'
+                                }`}
+                              >
+                                Agenda
+                              </button>
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                                <ChevronRight className="h-2.5 w-2.5" /> Pilih Tahap:
+                              </p>
+                              <Select
+                                value={itemStages[key]?.toString() || '1'}
+                                onValueChange={(v) => v && setStage(key, parseInt(v))}
+                              >
+                                <SelectTrigger className="h-8 text-[10px] bg-background border-emerald-500/20">
+                                  <SelectValue placeholder="Pilih Tahap" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {stages.map((s) => (
+                                    <SelectItem key={s.stage} value={s.stage.toString()} className="text-[10px]">
+                                      {s.label}: {s.description}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
                         )}
                       </div>

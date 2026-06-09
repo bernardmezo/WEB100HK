@@ -1,5 +1,6 @@
 import { Activity, CalculationResult, ParameterResult, ScoreValue } from './types';
 import { PROKER_PARAMETERS, AGENDA_PARAMETERS } from './parameters';
+import { getActiveParameterCodes } from './stages';
 
 // ===== Predicate Configuration =====
 
@@ -71,14 +72,23 @@ export function getPredicate(score: number): Predicate {
 /**
  * Calculate the final score and breakdown for an activity.
  *
- * Formula: Nilai Akhir = Σ (Skor_i × Bobot_i) / 100
+ * Formula: Nilai Akhir = Σ (Skor_i × Bobot_i) / Σ Bobot_aktif
+ * This ensures proportional redistribution of weights as per documentation.
  */
 export function calculateScore(activity: Activity): CalculationResult {
   const parameters = activity.type === 'proker' ? PROKER_PARAMETERS : AGENDA_PARAMETERS;
+  const activeCodes = getActiveParameterCodes(activity.type, activity.stage);
+  
+  // Calculate total weight of active parameters for redistribution
+  const totalActiveWeight = parameters
+    .filter(p => activeCodes.has(p.code))
+    .reduce((sum, p) => sum + p.weight, 0);
 
   const parameterResults: ParameterResult[] = parameters.map((param) => {
-    // Baseline logic removed: always use user score or default to 50
-    const score: ScoreValue = activity.scores[param.code] ?? 50;
+    // Default to 50 if no score provided
+    const score: ScoreValue = (activity.scores[param.code] ?? 50) as ScoreValue;
+    
+    // Contribution is calculated normally for each parameter
     const contribution = (score * param.weight) / 100;
 
     return {
@@ -90,7 +100,16 @@ export function calculateScore(activity: Activity): CalculationResult {
     };
   });
 
-  const finalScore = parameterResults.reduce((sum, r) => sum + r.contribution, 0);
+  // Sum contributions of ONLY active parameters
+  const activeContributionSum = parameterResults
+    .filter(r => activeCodes.has(r.code))
+    .reduce((sum, r) => sum + r.contribution, 0);
+
+  // Redistribute: (Sum of Active Contributions / Sum of Active Weights) * 100
+  const finalScore = totalActiveWeight > 0 
+    ? (activeContributionSum * 100) / totalActiveWeight 
+    : 0;
+    
   const roundedScore = Math.round(finalScore * 100) / 100;
   const predicate = getPredicate(roundedScore);
 

@@ -3,10 +3,11 @@
 import { useMemo, useRef } from 'react';
 import { Activity } from '@/lib/types';
 import { calculateScore, getPredicate, getScoreColor } from '@/lib/calculator';
+import { getActiveParameterCodes } from '@/lib/stages';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Trophy, FileText, Printer } from 'lucide-react';
+import { ArrowLeft, Trophy, FileText, Printer, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ResultSummaryProps {
@@ -16,6 +17,17 @@ interface ResultSummaryProps {
 
 export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
   const result = useMemo(() => calculateScore(activity), [activity]);
+  
+  const activeCodes = useMemo(() => 
+    getActiveParameterCodes(activity.type, activity.stage), 
+    [activity.type, activity.stage]
+  );
+  
+  const activeResults = useMemo(() => 
+    result.parameterResults.filter(r => activeCodes.has(r.code)),
+    [result.parameterResults, activeCodes]
+  );
+
   const predicate = useMemo(() => getPredicate(result.finalScore), [result.finalScore]);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -152,7 +164,12 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         {/* Breakdown Table */}
         <Card className="border-border/50 bg-card/50">
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Breakdown Per Parameter</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold">Breakdown Per Parameter Aktif</h3>
+              <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/30">
+                Tahap {activity.stage}
+              </Badge>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
@@ -164,7 +181,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                       Parameter
                     </th>
                     <th className="text-center py-2 px-2 font-medium text-muted-foreground">
-                      Bobot
+                      Bobot (Asli)
                     </th>
                     <th className="text-center py-2 px-2 font-medium text-muted-foreground">
                       Skor
@@ -175,7 +192,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                   </tr>
                 </thead>
                 <tbody>
-                  {result.parameterResults.map((r) => (
+                  {activeResults.map((r) => (
                     <tr
                       key={r.code}
                       className="border-b border-border/20 last:border-0 hover:bg-secondary/20 transition-colors"
@@ -202,7 +219,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                       colSpan={4}
                       className="py-3 px-2 font-semibold text-right"
                     >
-                      Nilai Akhir
+                      Nilai Akhir (Tahap {activity.stage})
                     </td>
                     <td
                       className={`py-3 px-2 text-right font-extrabold text-base tabular-nums bg-gradient-to-r ${predicate.color} bg-clip-text text-transparent`}
@@ -213,16 +230,26 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
                 </tfoot>
               </table>
             </div>
+            
+            <div className="mt-4 p-2.5 rounded-lg bg-secondary/30 text-[10px] leading-relaxed text-muted-foreground border border-border/30">
+              <div className="flex gap-2">
+                <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                <p>
+                  Sesuai <strong>Tahap {activity.stage}</strong>, parameter yang belum tercapai dikecualikan dari penilaian. 
+                  Bobot parameter aktif didistribusikan secara proporsional sehingga Nilai Akhir tetap dalam skala 25-100.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         {/* Visual Bar Chart */}
         <Card className="border-border/50 bg-card/50">
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Visualisasi Kontribusi</h3>
+            <h3 className="text-sm font-semibold mb-3">Visualisasi Kontribusi Parameter Aktif</h3>
             <div className="space-y-2">
-              {result.parameterResults.map((r) => {
-                const maxContrib = 100 * Math.max(...result.parameterResults.map(p => p.weight)) / 100;
+              {activeResults.map((r) => {
+                const maxContrib = 100 * Math.max(...activeResults.map(p => p.weight)) / 100;
                 const widthPercent = maxContrib > 0 ? (r.contribution / maxContrib) * 100 : 0;
                 return (
                   <div key={r.code} className="flex items-center gap-2">
@@ -256,7 +283,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         {/* Formula Reference */}
         <Separator className="opacity-30" />
         <div className="text-center text-[10px] text-muted-foreground space-y-0.5">
-          <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / 100</p>
+          <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / Σ Bobot_aktif</p>
           <p>Skala skor: 25 / 50 / 75 / 100</p>
           <p>
             Dicetak pada:{' '}

@@ -24,7 +24,7 @@ interface ActivityListProps {
   activities: Activity[];
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
-  onImport: (items: { name: string; type: ActivityType }[]) => void;
+  onImport: (items: { name: string; type: ActivityType; stage: number }[]) => void;
 }
 
 function ActivityCard({

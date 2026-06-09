@@ -4,11 +4,12 @@ import { useMemo, useState } from 'react';
 import { Activity, ScoreValue } from '@/lib/types';
 import { PROKER_PARAMETERS, AGENDA_PARAMETERS } from '@/lib/parameters';
 import { calculateScore, getPredicate } from '@/lib/calculator';
+import { getActiveParameterCodes } from '@/lib/stages';
 import { ParameterCard } from './parameter-card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, BarChart3 } from 'lucide-react';
+import { ArrowLeft, BarChart3, Info } from 'lucide-react';
 
 interface ScoringFormProps {
   activity: Activity;
@@ -23,8 +24,18 @@ export function ScoringForm({
   onBack,
   onViewResults,
 }: ScoringFormProps) {
-  const parameters =
+  const allParameters =
     activity.type === 'proker' ? PROKER_PARAMETERS : AGENDA_PARAMETERS;
+  
+  const activeCodes = useMemo(() => 
+    getActiveParameterCodes(activity.type, activity.stage), 
+    [activity.type, activity.stage]
+  );
+
+  const parameters = useMemo(() => 
+    allParameters.filter(p => activeCodes.has(p.code)),
+    [allParameters, activeCodes]
+  );
 
   const result = useMemo(() => calculateScore(activity), [activity]);
   const predicate = useMemo(() => getPredicate(result.finalScore), [result.finalScore]);
@@ -89,7 +100,7 @@ export function ScoringForm({
               <Badge variant="outline" className="text-xs">
                 {activity.type === 'proker' ? 'Program Kerja' : 'Agenda'}
               </Badge>
-              <Badge variant="outline" className="text-xs text-muted-foreground">
+              <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/30 bg-emerald-500/5">
                 Tahap {activity.stage}
               </Badge>
             </div>
@@ -100,13 +111,21 @@ export function ScoringForm({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">
-              {scoredParams.length}/{parameters.length} parameter dinilai
+              {scoredParams.length}/{parameters.length} parameter aktif dinilai
             </span>
             <span className="text-muted-foreground">
               {Math.round(progressPercent)}%
             </span>
           </div>
           <Progress value={progressPercent} className="h-1.5" />
+        </div>
+
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] leading-relaxed text-amber-800">
+          <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <p>
+            Berdasarkan <strong>Tahap {activity.stage}</strong>, hanya {parameters.length} parameter ({activeCodes.has('A1') ? 'A1' : 'B1'}-{activeCodes.has('A1') ? 'A' : 'B'}{parameters.length}) yang dinilai. 
+            Bobot parameter lainnya didistribusikan secara proporsional.
+          </p>
         </div>
       </div>
 
@@ -130,9 +149,9 @@ export function ScoringForm({
 
       {/* Sticky Bottom Score Bar */}
       <div className="sticky bottom-0 z-40 -mx-4 px-4 pb-4 pt-2 no-print">
-        <div className="glass rounded-xl p-3 flex items-center justify-between">
+        <div className="glass rounded-xl p-3 flex items-center justify-between shadow-xl border-t border-white/10">
           <div>
-            <p className="text-xs text-muted-foreground">Nilai Akhir</p>
+            <p className="text-xs text-muted-foreground">Nilai Akhir (Tahap {activity.stage})</p>
             <p
               className={`text-2xl font-bold tabular-nums bg-gradient-to-r ${predicate.color} bg-clip-text text-transparent`}
             >
