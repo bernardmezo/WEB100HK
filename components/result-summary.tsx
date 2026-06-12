@@ -235,8 +235,8 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
               <div className="flex gap-2">
                 <Info className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                 <p>
-                  Sesuai <strong>Tahap {activity.stage}</strong>, parameter yang belum tercapai dikecualikan dari penilaian dan bernilai 0. 
-                  Oleh karena itu, Nilai Akhir akan secara natural lebih kecil karena tidak dilakukan normalisasi, mencerminkan progres riil kegiatan saat ini.
+                  Sesuai <strong>Tahap {activity.stage}</strong>, parameter yang belum tercapai dikecualikan dari penilaian. 
+                  Bobot parameter yang dikecualikan didistribusikan ulang secara proporsional ke parameter aktif sehingga Nilai Akhir tetap berada pada rentang 25–100.
                 </p>
               </div>
             </div>
@@ -246,10 +246,10 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         {/* Visual Bar Chart */}
         <Card className="border-border/50 bg-card/50">
           <CardContent className="p-4">
-            <h3 className="text-sm font-semibold mb-3">Visualisasi Kontribusi Parameter Aktif</h3>
+            <h3 className="text-sm font-semibold mb-3">Visualisasi Kontribusi Parameter Aktif (Normalisasi)</h3>
             <div className="space-y-2">
               {activeResults.map((r) => {
-                const maxContrib = 100 * Math.max(...activeResults.map(p => p.weight)) / 100;
+                const maxContrib = Math.max(...activeResults.map(p => p.contribution));
                 const widthPercent = maxContrib > 0 ? (r.contribution / maxContrib) * 100 : 0;
                 return (
                   <div key={r.code} className="flex items-center gap-2">
@@ -283,7 +283,7 @@ export function ResultSummary({ activity, onBack }: ResultSummaryProps) {
         {/* Formula Reference */}
         <Separator className="opacity-30" />
         <div className="text-center text-[10px] text-muted-foreground space-y-0.5">
-          <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / 100</p>
+          <p>Rumus: Nilai Akhir = Σ (Skor_i × Bobot_i) / Σ Bobot_aktif</p>
           <p>Skala skor: 25 / 50 / 75 / 100</p>
           <p>
             Dicetak pada:{' '}

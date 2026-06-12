@@ -16,7 +16,7 @@ interface Predicate {
 
 const PREDICATES: Predicate[] = [
   {
-    min: 91, max: 100,
+    min: 86, max: 100,
     label: 'Sangat Baik',
     color: 'from-emerald-500 to-emerald-400',
     bgColor: 'bg-emerald-500/20',
@@ -24,7 +24,7 @@ const PREDICATES: Predicate[] = [
     interpretation: 'Seluruh atau hampir seluruh parameter terpenuhi dengan optimal.',
   },
   {
-    min: 76, max: 90,
+    min: 71, max: 85,
     label: 'Baik',
     color: 'from-blue-500 to-blue-400',
     bgColor: 'bg-blue-500/20',
@@ -32,7 +32,7 @@ const PREDICATES: Predicate[] = [
     interpretation: 'Sebagian besar parameter terpenuhi; terdapat ruang perbaikan minor.',
   },
   {
-    min: 61, max: 75,
+    min: 56, max: 70,
     label: 'Cukup',
     color: 'from-amber-500 to-amber-400',
     bgColor: 'bg-amber-500/20',
@@ -40,7 +40,7 @@ const PREDICATES: Predicate[] = [
     interpretation: 'Parameter terpenuhi secara moderat; perlu perbaikan pada beberapa aspek.',
   },
   {
-    min: 46, max: 60,
+    min: 41, max: 55,
     label: 'Kurang',
     color: 'from-orange-500 to-orange-400',
     bgColor: 'bg-orange-500/20',
@@ -48,7 +48,7 @@ const PREDICATES: Predicate[] = [
     interpretation: 'Parameter banyak tidak terpenuhi; perlu perhatian dan tindak lanjut MPM.',
   },
   {
-    min: 25, max: 45,
+    min: 25, max: 40,
     label: 'Tidak Memenuhi',
     color: 'from-rose-500 to-rose-400',
     bgColor: 'bg-rose-500/20',
@@ -79,17 +79,23 @@ export function calculateScore(activity: Activity): CalculationResult {
   const parameters = activity.type === 'proker' ? PROKER_PARAMETERS : AGENDA_PARAMETERS;
   const activeCodes = getActiveParameterCodes(activity.type, activity.stage);
 
+  // 1. Calculate total weight of active parameters to redistribute
+  const activeParameters = parameters.filter(p => activeCodes.has(p.code));
+  const totalActiveWeight = activeParameters.reduce((sum, p) => sum + p.weight, 0);
+
   const parameterResults: ParameterResult[] = parameters.map((param) => {
     const isActive = activeCodes.has(param.code);
     
-    // Inactive parameters have score 0.
     // Active parameters default to 50 if no score provided.
+    // Inactive parameters have score 0 and won't contribute to normalized final score.
     const score: ScoreValue = isActive 
       ? ((activity.scores[param.code] ?? 50) as ScoreValue) 
       : 0 as unknown as ScoreValue; 
     
-    // Contribution is calculated normally for each parameter
-    const contribution = (score * param.weight) / 100;
+    // Normalized contribution: (score * weight / totalActiveWeight)
+    const contribution = isActive && totalActiveWeight > 0
+      ? (score * param.weight) / totalActiveWeight
+      : 0;
 
     return {
       code: param.code,
@@ -100,7 +106,7 @@ export function calculateScore(activity: Activity): CalculationResult {
     };
   });
 
-  // Sum contributions of all parameters (inactive will be 0)
+  // Sum contributions (will be normalized to 100 scale because of totalActiveWeight)
   const finalScore = parameterResults.reduce((sum, r) => sum + r.contribution, 0);
     
   const roundedScore = Math.round(finalScore * 100) / 100;

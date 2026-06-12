@@ -7,10 +7,10 @@ export type ScoreValue = 25 | 50 | 75 | 100;
 export const SCORE_VALUES: ScoreValue[] = [25, 50, 75, 100];
 
 export const SCORE_LABELS: Record<ScoreValue, string> = {
-  25: 'Kurang',
-  50: 'Cukup',
-  75: 'Baik',
-  100: 'Sangat Baik',
+  25: 'Tidak Terpenuhi',
+  50: 'Kurang',
+  75: 'Cukup',
+  100: 'Baik',
 };
 
 export interface ScoreDescription {
