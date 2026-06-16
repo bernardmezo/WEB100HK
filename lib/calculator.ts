@@ -79,22 +79,18 @@ export function calculateScore(activity: Activity): CalculationResult {
   const parameters = activity.type === 'proker' ? PROKER_PARAMETERS : AGENDA_PARAMETERS;
   const activeCodes = getActiveParameterCodes(activity.type, activity.stage);
 
-  // 1. Calculate total weight of active parameters to redistribute
-  const activeParameters = parameters.filter(p => activeCodes.has(p.code));
-  const totalActiveWeight = activeParameters.reduce((sum, p) => sum + p.weight, 0);
-
   const parameterResults: ParameterResult[] = parameters.map((param) => {
     const isActive = activeCodes.has(param.code);
     
     // Active parameters default to 50 if no score provided.
-    // Inactive parameters have score 0 and won't contribute to normalized final score.
+    // Inactive parameters have score 0 and won't contribute.
     const score: ScoreValue = isActive 
       ? ((activity.scores[param.code] ?? 50) as ScoreValue) 
       : 0 as unknown as ScoreValue; 
     
-    // Normalized contribution: (score * weight / totalActiveWeight)
-    const contribution = isActive && totalActiveWeight > 0
-      ? (score * param.weight) / totalActiveWeight
+    // Contribution: (score * weight) / 100
+    const contribution = isActive
+      ? (score * param.weight) / 100
       : 0;
 
     return {
@@ -106,7 +102,7 @@ export function calculateScore(activity: Activity): CalculationResult {
     };
   });
 
-  // Sum contributions (will be normalized to 100 scale because of totalActiveWeight)
+  // Sum contributions (raw sum, no normalization)
   const finalScore = parameterResults.reduce((sum, r) => sum + r.contribution, 0);
     
   const roundedScore = Math.round(finalScore * 100) / 100;
