@@ -9,11 +9,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No PDF content provided' }, { status: 400 });
     }
 
-    // Mendukung hingga 3 API Key sebagai cadangan
+    // Mendukung hingga 4 API Key sebagai cadangan
     const apiKeys = [
       process.env.GEMINI_API_KEY,
       process.env.GEMINI_API_KEY_2,
       process.env.GEMINI_API_KEY_3,
+      process.env.GEMINI_API_KEY_4,
       process.env.GOOGLE_GENERATIVE_AI_API_KEY
     ].filter(Boolean) as string[];
 
@@ -82,8 +83,17 @@ Pastikan:
           lastError = err;
           console.error(`Model ${modelName} with API Key #${i + 1} failed:`, err.message);
           
-          // Jika kuota habis (429), break model loop, lanjut ke API key berikutnya
-          if (err.message?.includes('429') || err.message?.includes('quota')) {
+          // Jika kuota habis (429 / RESOURCE_EXHAUSTED), break model loop, lanjut ke API key berikutnya
+          const isQuotaError =
+            err.status === 429 ||
+            err.message?.includes('429') ||
+            err.message?.includes('quota') ||
+            err.message?.toLowerCase().includes('too many requests') ||
+            err.message?.includes('RESOURCE_EXHAUSTED') ||
+            err.message?.includes('Resource has been exhausted') ||
+            err.message?.includes('QuotaFailure');
+          if (isQuotaError) {
+            console.warn(`API Key #${i + 1} quota habis, mencoba key berikutnya...`);
             break;
           }
         }
